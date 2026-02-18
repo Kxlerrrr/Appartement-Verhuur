@@ -6,7 +6,7 @@
     <title>Azure Horizon | Ultra-Luxury Penthouse</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framer-motion@10.16.4/dist/framer-motion.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
@@ -14,265 +14,276 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
         .serif { font-family: 'Cormorant Garamond', serif; }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
         .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
         .progress-bar { height: 4px; background: var(--accent); position: fixed; top: 0; left: 0; z-index: 100; transition: width 0.2s; }
         
-        /* Lightbox Styles */
-        #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; align-items: center; justify-content: center; }
-        
-        /* Image Hover Effect */
-        .gallery-img { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); cursor: zoom-in; }
-        .gallery-img:hover { transform: scale(1.03); }
+        /* Calendar Logic Styles */
+        .calendar-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 12px; font-weight: 600; transition: all 0.2s; position: relative; }
+        .calendar-day:hover:not(.disabled) { background: #f1f5f9; color: var(--accent); }
+        .calendar-day.selected { background: var(--accent) !important; color: white !important; }
+        .calendar-day.in-range { background: #dbeafe; color: #1e40af; }
+        .calendar-day.disabled { color: #cbd5e1; cursor: not-allowed; text-decoration: line-through; }
+        .calendar-day.today::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
 
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        .float-anim { animation: float 4s ease-in-out infinite; }
+        #success-overlay { display: none; position: fixed; inset: 0; background: white; z-index: 1000; align-items: center; justify-content: center; text-align: center; }
+        
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .animate-slide { animation: slideIn 0.5s ease-out; }
     </style>
 </head>
 <body class="bg-[#fafafa] text-slate-900">
 
     <div id="progress" class="progress-bar" style="width: 0%"></div>
 
-    <div id="lightbox" onclick="this.style.display='none'">
-        <img id="lightbox-img" src="" class="max-w-[90%] max-h-[90vh] rounded-lg shadow-2xl">
-        <p class="absolute bottom-10 text-white font-medium">Click anywhere to close</p>
-    </div>
-
-    <div id="urgency-toast" class="fixed bottom-6 left-6 z-[100] glass p-5 rounded-2xl flex items-center gap-4 max-w-sm shadow-2xl transition-all duration-500 translate-y-32 opacity-0">
-        <div class="bg-blue-600 p-3 rounded-full text-white float-anim"><i class="fa-solid fa-bolt-lightning"></i></div>
-        <div>
-            <p class="text-sm font-extrabold" id="toast-text">High Demand Location</p>
-            <p class="text-xs text-gray-500">Book soon to secure your dates.</p>
+    <div id="success-overlay" class="p-6">
+        <div class="max-w-md mx-auto">
+            <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 text-4xl">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h2 class="text-4xl font-bold mb-4 tracking-tighter">Pack your bags!</h2>
+            <p class="text-slate-500 mb-8">Your stay at Azure Horizon is confirmed. A digital key and welcome guide have been sent to your email.</p>
+            <div class="bg-slate-50 p-6 rounded-3xl mb-8">
+                <p class="text-xs font-black uppercase text-slate-400 mb-2">Reservation ID</p>
+                <p class="font-mono text-lg">AZH-9928-NY</p>
+            </div>
+            <button onclick="location.reload()" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold">Done</button>
         </div>
     </div>
 
     <nav class="glass sticky top-0 z-50 border-b border-white/20">
         <div class="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
-            <div class="flex items-center gap-12">
-                <div class="text-3xl font-black text-blue-600 tracking-tighter italic">AZURE.</div>
-                <div class="hidden lg:flex gap-10 font-bold text-[13px] uppercase tracking-[0.2em] text-slate-400">
-                    <a href="#" class="hover:text-blue-600 transition">Design</a>
-                    <a href="#" class="hover:text-blue-600 transition">Amenities</a>
-                    <a href="#" class="hover:text-blue-600 transition">Location</a>
-                </div>
+            <div class="text-3xl font-black text-blue-600 tracking-tighter italic">AZURE.</div>
+            <div class="hidden lg:flex gap-10 font-bold text-[13px] uppercase tracking-[0.2em] text-slate-400">
+                <a href="#gallery" class="hover:text-blue-600 transition">Gallery</a>
+                <a href="#upsells" class="hover:text-blue-600 transition">Experience</a>
+                <a href="#reviews" class="hover:text-blue-600 transition">Reviews</a>
             </div>
-            <div class="flex items-center gap-6">
-                <div class="hidden md:flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full">
-                    <i class="fa-solid fa-cloud-sun text-orange-400"></i>
-                    <span class="text-xs font-bold uppercase">NYC 72°F</span>
-                </div>
-                <button class="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:scale-105 active:scale-95 transition-all shadow-xl shadow-blue-200">Reserve Now</button>
+            <div class="flex items-center gap-4">
+                <select class="bg-transparent border-none text-xs font-bold uppercase tracking-widest cursor-pointer outline-none">
+                    <option>USD ($)</option>
+                    <option>EUR (€)</option>
+                </select>
+                <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-xl shadow-blue-200">Reserve</button>
             </div>
         </div>
     </nav>
 
-    <header class="relative h-[85vh] group overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-[10s]">
-        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end pb-24">
-            <div class="max-w-7xl mx-auto px-6 w-full">
-                <span class="text-blue-400 font-bold tracking-[0.4em] uppercase text-sm mb-4 block">Upper East Side, NY</span>
-                <h1 class="text-6xl md:text-9xl font-bold text-white mb-8 tracking-tighter serif italic">The Sky Suite.</h1>
-                <div class="flex flex-wrap gap-4">
-                    <button onclick="openLightbox('https://images.unsplash.com/photo-1512917774080-9991f1c4c750')" class="bg-white/10 backdrop-blur-md text-white border border-white/30 px-8 py-4 rounded-full font-bold hover:bg-white hover:text-black transition">View Gallery</button>
-                    <button class="bg-white text-black px-8 py-4 rounded-full font-bold flex items-center gap-3 hover:bg-blue-600 hover:text-white transition">
-                        <i class="fa-solid fa-play"></i> Watch Film
-                    </button>
-                </div>
+    <header class="relative h-[70vh] overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <div class="text-center">
+                <h1 class="text-7xl md:text-9xl font-bold text-white tracking-tighter serif italic mb-4">Elevated Living.</h1>
+                <p class="text-white/80 font-medium tracking-widest uppercase text-sm">Penthouse 42B • Manhattan Skyline</p>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-12 gap-16">
+    <main class="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-12 gap-16">
         
-        <div class="lg:col-span-8 space-y-24">
-            
-            <section>
-                <div class="flex justify-between items-end mb-10">
-                    <div>
-                        <h2 class="text-4xl font-bold tracking-tight mb-2">Designed for Immersion</h2>
-                        <p class="text-slate-500">Every corner is a curated masterpiece by Studio Azure.</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <div class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer"><i class="fa-solid fa-chevron-left"></i></div>
-                        <div class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-100 cursor-pointer"><i class="fa-solid fa-chevron-right"></i></div>
-                    </div>
+        <div class="lg:col-span-7 space-y-20">
+            <div class="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-center gap-4 animate-slide">
+                <div class="flex -space-x-2">
+                    <img src="https://i.pravatar.cc/100?u=1" class="w-8 h-8 rounded-full border-2 border-white">
+                    <img src="https://i.pravatar.cc/100?u=2" class="w-8 h-8 rounded-full border-2 border-white">
+                    <img src="https://i.pravatar.cc/100?u=3" class="w-8 h-8 rounded-full border-2 border-white">
                 </div>
-
-                <div class="grid grid-cols-12 grid-rows-2 gap-4 h-[600px]">
-                    <div class="col-span-8 row-span-2 overflow-hidden rounded-[2rem]">
-                        <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000" class="gallery-img w-full h-full object-cover" onclick="openLightbox(this.src)">
-                    </div>
-                    <div class="col-span-4 overflow-hidden rounded-[2rem]">
-                        <img src="https://images.unsplash.com/photo-1600607687940-47a04b629571?auto=format&fit=crop&w=600" class="gallery-img w-full h-full object-cover" onclick="openLightbox(this.src)">
-                    </div>
-                    <div class="col-span-4 overflow-hidden rounded-[2rem] relative">
-                        <img src="https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=600" class="gallery-img w-full h-full object-cover" onclick="openLightbox(this.src)">
-                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
-                            <span class="text-white font-bold text-xl">+12 Photos</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-y border-slate-100">
-                <div class="space-y-3">
-                    <i class="fa-solid fa-wifi text-2xl text-blue-600"></i>
-                    <h5 class="font-bold">Gbps Fiber</h5>
-                    <p class="text-xs text-slate-400">Ultra-fast work setup</p>
-                </div>
-                <div class="space-y-3">
-                    <i class="fa-solid fa-temperature-arrow-up text-2xl text-blue-600"></i>
-                    <h5 class="font-bold">Steam Sauna</h5>
-                    <p class="text-xs text-slate-400">Private in-suite spa</p>
-                </div>
-                <div class="space-y-3">
-                    <i class="fa-solid fa-car-side text-2xl text-blue-600"></i>
-                    <h5 class="font-bold">Tesla Rental</h5>
-                    <p class="text-xs text-slate-400">Model Y included</p>
-                </div>
-                <div class="space-y-3">
-                    <i class="fa-solid fa-wine-glass text-2xl text-blue-600"></i>
-                    <h5 class="font-bold">Wine Cellar</h5>
-                    <p class="text-xs text-slate-400">Curated 2020 collection</p>
-                </div>
-            </section>
-
-            <div class="glass p-10 rounded-[3rem] flex flex-col md:flex-row items-center gap-10">
-                <div class="relative">
-                    <img src="https://i.pravatar.cc/150?u=alex" class="w-32 h-32 rounded-full object-cover ring-8 ring-blue-50">
-                    <div class="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-full text-xs shadow-lg"><i class="fa-solid fa-check"></i></div>
-                </div>
-                <div class="flex-1 text-center md:text-left">
-                    <h3 class="text-2xl font-bold mb-2">Designed by Alexander</h3>
-                    <p class="text-slate-600 mb-6 leading-relaxed">"Welcome to my sanctuary. This penthouse isn't just a place to stay—it's an exploration of light, texture, and silence in the heart of the city."</p>
-                    <button class="text-blue-600 font-bold border-b-2 border-blue-100 hover:border-blue-600 transition pb-1">Read Alexander's Story</button>
-                </div>
+                <p class="text-sm font-semibold text-blue-900">
+                    <span id="booking-count">12</span> people booked in the last 24 hours.
+                </p>
             </div>
+
+            <section id="upsells">
+                <h3 class="text-2xl font-bold mb-8 tracking-tight">Personalize Your Stay</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div onclick="toggleUpsell(this, 150)" class="upsell-card p-6 border-2 border-slate-100 rounded-[2rem] cursor-pointer hover:border-blue-600 transition group relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-4">
+                            <i class="fa-solid fa-utensils text-2xl text-slate-300 group-hover:text-blue-600 transition"></i>
+                            <span class="font-bold text-blue-600">+$150</span>
+                        </div>
+                        <h4 class="font-bold text-lg">Private Chef Dinner</h4>
+                        <p class="text-sm text-slate-500">A 5-course tasting menu prepared in your kitchen.</p>
+                    </div>
+                    <div onclick="toggleUpsell(this, 85)" class="upsell-card p-6 border-2 border-slate-100 rounded-[2rem] cursor-pointer hover:border-blue-600 transition group">
+                        <div class="flex justify-between items-start mb-4">
+                            <i class="fa-solid fa-car-side text-2xl text-slate-300 group-hover:text-blue-600 transition"></i>
+                            <span class="font-bold text-blue-600">+$85</span>
+                        </div>
+                        <h4 class="font-bold text-lg">Airport Chauffeur</h4>
+                        <p class="text-sm text-slate-500">Luxury SUV pickup from JFK, LGA, or EWR.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="calendar-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold tracking-tight">Select Dates</h3>
+                    <div class="flex gap-4 text-sm font-bold">
+                        <button onclick="changeMonth(-1)" class="hover:text-blue-600"><i class="fa-solid fa-arrow-left"></i></button>
+                        <span id="current-month-display">October 2025</span>
+                        <button onclick="changeMonth(1)" class="hover:text-blue-600"><i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+                <div class="bg-white border rounded-[2rem] p-8 shadow-sm">
+                    <div class="grid grid-cols-7 gap-2 text-center text-[10px] font-black uppercase text-slate-400 mb-4">
+                        <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+                        </div>
+                </div>
+            </section>
         </div>
 
-        <div class="lg:col-span-4">
+        <div class="lg:col-span-5">
             <div class="sticky top-32 glass rounded-[2.5rem] p-10 shadow-2xl border-white shadow-blue-900/5">
                 <div class="flex justify-between items-start mb-8">
                     <div>
                         <span class="text-4xl font-black text-slate-900 tracking-tighter">$420</span>
                         <span class="text-slate-400 font-bold text-sm">/night</span>
                     </div>
-                    <div class="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-50 px-3 py-1 rounded-full text-xs">
-                        <i class="fa-solid fa-star"></i> 4.98
-                    </div>
                 </div>
 
-                <div class="space-y-4 mb-8">
-                    <div class="grid grid-cols-2 gap-0 border rounded-2xl overflow-hidden">
-                        <div class="p-4 border-r border-b hover:bg-slate-50 cursor-pointer">
-                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-1">Check-in</label>
-                            <span class="font-bold text-sm">Oct 12, 2025</span>
-                        </div>
-                        <div class="p-4 border-b hover:bg-slate-50 cursor-pointer">
-                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-1">Check-out</label>
-                            <span class="font-bold text-sm">Oct 18, 2025</span>
-                        </div>
-                        <div class="col-span-2 p-4 hover:bg-slate-50 cursor-pointer">
-                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-1">Guests</label>
-                            <span class="font-bold text-sm">2 Adults, 1 Goldendoodle</span>
-                        </div>
+                <div class="bg-slate-50 rounded-2xl p-4 flex flex-col gap-4 mb-8">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Check-in</span>
+                        <span id="checkin-date" class="font-bold">—</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Check-out</span>
+                        <span id="checkout-date" class="font-bold">—</span>
                     </div>
                 </div>
 
                 <div class="space-y-4 mb-8">
                     <div class="flex justify-between text-sm">
-                        <span class="text-slate-500">$420 x 6 nights</span>
-                        <span class="font-bold">$2,520</span>
+                        <span class="text-slate-500">Nights</span>
+                        <span id="night-count" class="font-bold">0</span>
                     </div>
                     <div class="flex justify-between text-sm">
-                        <span class="text-slate-500">Service fee</span>
-                        <span class="font-bold">$120</span>
+                        <span class="text-slate-500">Experience Add-ons</span>
+                        <span id="upsell-total" class="font-bold">$0</span>
                     </div>
                     <div class="pt-4 border-t flex justify-between">
-                        <span class="font-extrabold">Total</span>
-                        <span class="font-extrabold text-blue-600 text-xl">$2,640</span>
+                        <span class="font-extrabold text-lg">Total</span>
+                        <span id="final-price" class="font-extrabold text-blue-600 text-2xl">$0</span>
                     </div>
                 </div>
 
-                <button class="w-full bg-slate-900 text-white py-6 rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all shadow-xl group">
-                    Instant Book 
+                <button onclick="processBooking()" class="w-full bg-slate-900 text-white py-6 rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all shadow-xl group">
+                    <span id="btn-text">Confirm Booking</span>
                     <i class="fa-solid fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </button>
-                <p class="text-center text-xs text-gray-400 mt-6">Secure payment via AzurePay & Airbnb</p>
             </div>
         </div>
     </main>
 
-    <footer class="bg-slate-900 text-white py-24">
-        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-16">
-            <div class="col-span-2">
-                <div class="text-4xl font-black text-white italic mb-8">AZURE.</div>
-                <p class="text-slate-400 max-w-sm leading-relaxed">Redefining the boutique hospitality experience through architectural excellence and unparalleled service.</p>
-            </div>
-            <div>
-                <h4 class="font-bold mb-6 uppercase tracking-widest text-xs text-blue-400">The Stay</h4>
-                <ul class="space-y-4 text-slate-400 font-medium">
-                    <li><a href="#" class="hover:text-white transition">Gallery</a></li>
-                    <li><a href="#" class="hover:text-white transition">Amenities</a></li>
-                    <li><a href="#" class="hover:text-white transition">Concierge</a></li>
-                </ul>
-            </div>
-            <div>
-                <h4 class="font-bold mb-6 uppercase tracking-widest text-xs text-blue-400">Connect</h4>
-                <div class="flex gap-6 text-2xl">
-                    <i class="fa-brands fa-instagram hover:text-blue-400 cursor-pointer transition"></i>
-                    <i class="fa-brands fa-vimeo hover:text-blue-400 cursor-pointer transition"></i>
-                    <i class="fa-brands fa-pinterest hover:text-blue-400 cursor-pointer transition"></i>
-                </div>
-            </div>
-        </div>
-    </footer>
-
     <script>
-        // Progress Bar Logic
-        window.onscroll = function() {
+        // State Management
+        let checkIn = null;
+        let checkOut = null;
+        let upsellTotal = 0;
+        const basePrice = 420;
+
+        // Calendar Logic
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthDisplay = document.getElementById('current-month-display');
+        let currentMonth = 9; // October (0-indexed 9)
+        
+        function renderCalendar() {
+            calendarGrid.innerHTML = '';
+            const daysInMonth = 31;
+            const startDay = 3; // Wednesday
+            
+            // Empty days
+            for(let i=0; i<startDay; i++) calendarGrid.innerHTML += '<div></div>';
+            
+            for(let d=1; d<=daysInMonth; d++) {
+                const isBooked = [4, 5, 18, 19, 25].includes(d);
+                const dayEl = document.createElement('div');
+                dayEl.className = `calendar-day ${isBooked ? 'disabled' : ''}`;
+                dayEl.innerText = d;
+                
+                if(!isBooked) {
+                    dayEl.onclick = () => selectDate(d);
+                }
+                calendarGrid.appendChild(dayEl);
+            }
+        }
+
+        function selectDate(day) {
+            if(!checkIn || (checkIn && checkOut)) {
+                checkIn = day;
+                checkOut = null;
+            } else if (day > checkIn) {
+                checkOut = day;
+            } else {
+                checkIn = day;
+            }
+            updateCalendarUI();
+            updatePricing();
+        }
+
+        function updateCalendarUI() {
+            document.querySelectorAll('.calendar-day').forEach(el => {
+                const d = parseInt(el.innerText);
+                el.classList.remove('selected', 'in-range');
+                if(d === checkIn || d === checkOut) el.classList.add('selected');
+                if(d > checkIn && d < checkOut) el.classList.add('in-range');
+            });
+            
+            document.getElementById('checkin-date').innerText = checkIn ? `Oct ${checkIn}, 2025` : '—';
+            document.getElementById('checkout-date').innerText = checkOut ? `Oct ${checkOut}, 2025` : '—';
+        }
+
+        function toggleUpsell(el, price) {
+            el.classList.toggle('border-blue-600');
+            el.classList.toggle('bg-blue-50');
+            if(el.classList.contains('bg-blue-50')) {
+                upsellTotal += price;
+            } else {
+                upsellTotal -= price;
+            }
+            updatePricing();
+        }
+
+        function updatePricing() {
+            const nights = checkOut ? (checkOut - checkIn) : 0;
+            const stayTotal = nights * basePrice;
+            const final = stayTotal + upsellTotal;
+            
+            document.getElementById('night-count').innerText = nights;
+            document.getElementById('upsell-total').innerText = `$${upsellTotal}`;
+            document.getElementById('final-price').innerText = final > 0 ? `$${final.toLocaleString()}` : '$0';
+        }
+
+        // Success Flow
+        function processBooking() {
+            if(!checkOut) {
+                alert("Please select a check-out date first!");
+                return;
+            }
+            const btn = document.getElementById('btn-text');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Securing...';
+            
+            setTimeout(() => {
+                document.getElementById('success-overlay').style.display = 'flex';
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#2563eb', '#93c5fd', '#000000']
+                });
+            }, 1500);
+        }
+
+        renderCalendar();
+
+        // Progress Bar
+        window.onscroll = () => {
             let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             let scrolled = (winScroll / height) * 100;
             document.getElementById("progress").style.width = scrolled + "%";
         };
-
-        // Lightbox Control
-        function openLightbox(src) {
-            const lb = document.getElementById('lightbox');
-            const img = document.getElementById('lightbox-img');
-            img.src = src;
-            lb.style.display = 'flex';
-        }
-
-        // Urgency Engine
-        const toasts = [
-            "Wait! 3 other guests are looking at these dates.",
-            "Rare Find: Usually booked 3 months in advance.",
-            "Price Drop! You're saving $40/night today.",
-            "Alexander just responded to a guest inquiry."
-        ];
-        
-        const toastEl = document.getElementById('urgency-toast');
-        const toastText = document.getElementById('toast-text');
-
-        function triggerToast() {
-            const random = toasts[Math.floor(Math.random() * toasts.length)];
-            toastText.innerText = random;
-            toastEl.classList.remove('translate-y-32', 'opacity-0');
-            
-            setTimeout(() => {
-                toastEl.classList.add('translate-y-32', 'opacity-0');
-            }, 5000);
-        }
-
-        setTimeout(triggerToast, 4000);
-        setInterval(triggerToast, 20000);
     </script>
 </body>
 </html>
