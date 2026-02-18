@@ -11,279 +11,257 @@
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
         :root { --accent: #2563eb; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; scroll-behavior: smooth; overflow-x: hidden; background: #fafafa; }
         .serif { font-family: 'Cormorant Garamond', serif; }
-        
         .glass { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
-        .progress-bar { height: 4px; background: var(--accent); position: fixed; top: 0; left: 0; z-index: 100; transition: width 0.2s; }
         
-        /* Calendar Logic Styles */
-        .calendar-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 12px; font-weight: 600; transition: all 0.2s; position: relative; }
-        .calendar-day:hover:not(.disabled) { background: #f1f5f9; color: var(--accent); }
+        /* Perspective Switcher Logic */
+        .night-mode .hero-img { filter: brightness(0.4) saturate(1.2) hue-rotate(240deg); }
+        .night-mode .hero-overlay { background: rgba(15, 23, 42, 0.4); }
+        
+        /* Calendar Styles */
+        .calendar-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 12px; font-weight: 600; transition: all 0.2s; }
         .calendar-day.selected { background: var(--accent) !important; color: white !important; }
-        .calendar-day.in-range { background: #dbeafe; color: #1e40af; }
         .calendar-day.disabled { color: #cbd5e1; cursor: not-allowed; text-decoration: line-through; }
-        .calendar-day.today::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
-
-        #success-overlay { display: none; position: fixed; inset: 0; background: white; z-index: 1000; align-items: center; justify-content: center; text-align: center; }
         
-        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        .animate-slide { animation: slideIn 0.5s ease-out; }
+        /* Map Pin Pulse */
+        @keyframes pinPulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
+        .pin-pulse { position: absolute; width: 12px; height: 12px; background: #2563eb; border-radius: 50%; }
+        .pin-pulse::after { content: ''; position: absolute; inset: 0; background: #2563eb; border-radius: 50%; animation: pinPulse 2s infinite; }
+
+        #onboarding-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1001; align-items: center; justify-content: center; }
     </style>
 </head>
-<body class="bg-[#fafafa] text-slate-900">
+<body id="body-tag">
 
-    <div id="progress" class="progress-bar" style="width: 0%"></div>
+    <audio id="ambient-audio" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
 
-    <div id="success-overlay" class="p-6">
-        <div class="max-w-md mx-auto">
-            <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 text-4xl">
-                <i class="fa-solid fa-check"></i>
+    <div id="onboarding-modal">
+        <div class="bg-white p-10 rounded-[3rem] max-w-lg w-full m-4 shadow-2xl relative">
+            <div id="step-1">
+                <h2 class="text-3xl font-bold mb-4">Concierge Services</h2>
+                <p class="text-slate-500 mb-6">Welcome to the family. How can we prepare for your arrival?</p>
+                <div class="space-y-4">
+                    <label class="block">
+                        <span class="text-xs font-bold uppercase text-slate-400">Pillow Preference</span>
+                        <select class="w-full mt-2 p-4 bg-slate-100 rounded-xl border-none outline-none">
+                            <option>Hungarian Goose Down</option>
+                            <option>Memory Foam</option>
+                            <option>Organic Silk</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-bold uppercase text-slate-400">Fridge Stocking</span>
+                        <input type="text" placeholder="e.g. Oat Milk, Champagne..." class="w-full mt-2 p-4 bg-slate-100 rounded-xl border-none outline-none">
+                    </label>
+                </div>
+                <button onclick="location.reload()" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-xl font-bold">Complete Check-in</button>
             </div>
-            <h2 class="text-4xl font-bold mb-4 tracking-tighter">Pack your bags!</h2>
-            <p class="text-slate-500 mb-8">Your stay at Azure Horizon is confirmed. A digital key and welcome guide have been sent to your email.</p>
-            <div class="bg-slate-50 p-6 rounded-3xl mb-8">
-                <p class="text-xs font-black uppercase text-slate-400 mb-2">Reservation ID</p>
-                <p class="font-mono text-lg">AZH-9928-NY</p>
-            </div>
-            <button onclick="location.reload()" class="bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold">Done</button>
         </div>
     </div>
 
     <nav class="glass sticky top-0 z-50 border-b border-white/20">
         <div class="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
             <div class="text-3xl font-black text-blue-600 tracking-tighter italic">AZURE.</div>
-            <div class="hidden lg:flex gap-10 font-bold text-[13px] uppercase tracking-[0.2em] text-slate-400">
-                <a href="#gallery" class="hover:text-blue-600 transition">Gallery</a>
-                <a href="#upsells" class="hover:text-blue-600 transition">Experience</a>
-                <a href="#reviews" class="hover:text-blue-600 transition">Reviews</a>
+            <div class="hidden lg:flex gap-8 font-bold text-xs uppercase tracking-widest text-slate-500">
+                <a href="#gallery" class="hover:text-blue-600">Gallery</a>
+                <a href="#map-section" class="hover:text-blue-600">Neighborhood</a>
+                <a href="#booking" class="hover:text-blue-600">Availability</a>
             </div>
             <div class="flex items-center gap-4">
-                <select class="bg-transparent border-none text-xs font-bold uppercase tracking-widest cursor-pointer outline-none">
-                    <option>USD ($)</option>
-                    <option>EUR (€)</option>
-                </select>
-                <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-xl shadow-blue-200">Reserve</button>
+                <button onclick="toggleAudio()" id="audio-btn" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                    <i class="fa-solid fa-volume-xmark"></i>
+                </button>
+                <button onclick="toggleNight()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600 transition">Toggle Night</button>
             </div>
         </div>
     </nav>
 
-    <header class="relative h-[70vh] overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover">
-        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <div class="text-center">
-                <h1 class="text-7xl md:text-9xl font-bold text-white tracking-tighter serif italic mb-4">Elevated Living.</h1>
-                <p class="text-white/80 font-medium tracking-widest uppercase text-sm">Penthouse 42B • Manhattan Skyline</p>
+    <header class="relative h-[80vh] overflow-hidden hero-container">
+        <img id="hero-img" src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80" class="hero-img w-full h-full object-cover transition-all duration-1000">
+        <div class="hero-overlay absolute inset-0 bg-black/30 transition-all duration-1000 flex items-center justify-center">
+            <div class="text-center text-white p-6">
+                <h1 class="text-7xl md:text-9xl font-bold tracking-tighter serif italic mb-4">Live the Sky.</h1>
+                <p class="text-lg font-light tracking-[0.5em] uppercase">Private Penthouse 42B</p>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-12 gap-16">
-        
-        <div class="lg:col-span-7 space-y-20">
-            <div class="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-center gap-4 animate-slide">
-                <div class="flex -space-x-2">
-                    <img src="https://i.pravatar.cc/100?u=1" class="w-8 h-8 rounded-full border-2 border-white">
-                    <img src="https://i.pravatar.cc/100?u=2" class="w-8 h-8 rounded-full border-2 border-white">
-                    <img src="https://i.pravatar.cc/100?u=3" class="w-8 h-8 rounded-full border-2 border-white">
+    <main class="max-w-7xl mx-auto px-6 py-20">
+        <section id="gallery" class="mb-32">
+            <h2 class="text-4xl font-bold mb-12 tracking-tight">The Space</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="rounded-[2rem] overflow-hidden h-96 relative group">
+                    <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                    <div class="absolute bottom-6 left-6 text-white font-bold">Main Salon</div>
                 </div>
-                <p class="text-sm font-semibold text-blue-900">
-                    <span id="booking-count">12</span> people booked in the last 24 hours.
-                </p>
+                <div class="rounded-[2rem] overflow-hidden h-96 relative group">
+                    <img src="https://images.unsplash.com/photo-1560448204-61dc36dc98c8?auto=format&fit=crop&w=800" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                    <div class="absolute bottom-6 left-6 text-white font-bold">The Master Wing</div>
+                </div>
+                <div class="rounded-[2rem] overflow-hidden h-96 relative group">
+                    <img src="https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                    <div class="absolute bottom-6 left-6 text-white font-bold">Sky Terrace</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            <div class="lg:col-span-7 space-y-24">
+                
+                <section id="map-section">
+                    <div class="flex justify-between items-end mb-8">
+                        <h3 class="text-2xl font-bold">Local Secrets</h3>
+                        <p class="text-sm text-blue-600 font-bold">Upper East Side, NY</p>
+                    </div>
+                    <div class="relative bg-slate-200 h-[500px] rounded-[3rem] overflow-hidden border-8 border-white shadow-xl">
+                        <img src="https://images.squarespace-cdn.com/content/v1/5493064de4b013c7b3996522/1531777085794-H51D7S9J9D0I276DOGK3/map-of-manhattan.jpg" class="w-full h-full object-cover opacity-50 grayscale">
+                        
+                        <div onclick="showTip('Alexander\'s Favorite Espresso is at Blue Bottle, 2 mins away.')" class="cursor-pointer" style="top: 30%; left: 45%; position: absolute;">
+                            <div class="pin-pulse"></div>
+                            <div class="bg-white text-[10px] font-bold px-2 py-1 rounded-full mt-4 shadow-lg whitespace-nowrap">Artisan Coffee</div>
+                        </div>
+                        <div onclick="showTip('The secret Park entrance is 400m North of the building.')" class="cursor-pointer" style="top: 60%; left: 25%; position: absolute;">
+                            <div class="pin-pulse"></div>
+                            <div class="bg-white text-[10px] font-bold px-2 py-1 rounded-full mt-4 shadow-lg whitespace-nowrap">Secret Park Gate</div>
+                        </div>
+
+                        <div id="map-tip" class="absolute bottom-6 left-6 right-6 glass p-6 rounded-2xl hidden animate-slide">
+                            <p id="tip-text" class="text-sm font-semibold"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-2xl font-bold mb-8">Enhance the Journey</h3>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div onclick="toggleUpsell(this, 200)" class="p-6 border-2 border-slate-100 rounded-3xl cursor-pointer hover:border-blue-600 transition flex justify-between items-center group">
+                            <div class="flex items-center gap-6">
+                                <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+                                    <i class="fa-solid fa-helicopter"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold">Heli-Transfer JFK</h4>
+                                    <p class="text-xs text-red-500 font-bold mt-1 uppercase"><i class="fa-solid fa-fire"></i> Only 1 left for your dates</p>
+                                </div>
+                            </div>
+                            <span class="font-bold text-blue-600">+$200</span>
+                        </div>
+                    </div>
+                </section>
             </div>
 
-            <section id="upsells">
-                <h3 class="text-2xl font-bold mb-8 tracking-tight">Personalize Your Stay</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div onclick="toggleUpsell(this, 150)" class="upsell-card p-6 border-2 border-slate-100 rounded-[2rem] cursor-pointer hover:border-blue-600 transition group relative overflow-hidden">
-                        <div class="flex justify-between items-start mb-4">
-                            <i class="fa-solid fa-utensils text-2xl text-slate-300 group-hover:text-blue-600 transition"></i>
-                            <span class="font-bold text-blue-600">+$150</span>
+            <div id="booking" class="lg:col-span-5">
+                <div class="sticky top-32 glass rounded-[2.5rem] p-10 shadow-2xl border-white shadow-blue-900/5">
+                    <div class="flex justify-between items-center mb-8">
+                        <span class="text-4xl font-black">$420 <span class="text-sm text-slate-400">/night</span></span>
+                    </div>
+
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs mb-8">
                         </div>
-                        <h4 class="font-bold text-lg">Private Chef Dinner</h4>
-                        <p class="text-sm text-slate-500">A 5-course tasting menu prepared in your kitchen.</p>
-                    </div>
-                    <div onclick="toggleUpsell(this, 85)" class="upsell-card p-6 border-2 border-slate-100 rounded-[2rem] cursor-pointer hover:border-blue-600 transition group">
-                        <div class="flex justify-between items-start mb-4">
-                            <i class="fa-solid fa-car-side text-2xl text-slate-300 group-hover:text-blue-600 transition"></i>
-                            <span class="font-bold text-blue-600">+$85</span>
-                        </div>
-                        <h4 class="font-bold text-lg">Airport Chauffeur</h4>
-                        <p class="text-sm text-slate-500">Luxury SUV pickup from JFK, LGA, or EWR.</p>
-                    </div>
-                </div>
-            </section>
 
-            <section id="calendar-section">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold tracking-tight">Select Dates</h3>
-                    <div class="flex gap-4 text-sm font-bold">
-                        <button onclick="changeMonth(-1)" class="hover:text-blue-600"><i class="fa-solid fa-arrow-left"></i></button>
-                        <span id="current-month-display">October 2025</span>
-                        <button onclick="changeMonth(1)" class="hover:text-blue-600"><i class="fa-solid fa-arrow-right"></i></button>
+                    <div class="space-y-4 mb-8 text-sm">
+                        <div class="flex justify-between"><span class="text-slate-500">Dates</span><span id="date-range" class="font-bold">—</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Total</span><span id="final-total" class="font-black text-2xl text-blue-600">$0</span></div>
                     </div>
-                </div>
-                <div class="bg-white border rounded-[2rem] p-8 shadow-sm">
-                    <div class="grid grid-cols-7 gap-2 text-center text-[10px] font-black uppercase text-slate-400 mb-4">
-                        <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
-                    </div>
-                    <div id="calendar-grid" class="grid grid-cols-7 gap-2">
-                        </div>
-                </div>
-            </section>
-        </div>
 
-        <div class="lg:col-span-5">
-            <div class="sticky top-32 glass rounded-[2.5rem] p-10 shadow-2xl border-white shadow-blue-900/5">
-                <div class="flex justify-between items-start mb-8">
-                    <div>
-                        <span class="text-4xl font-black text-slate-900 tracking-tighter">$420</span>
-                        <span class="text-slate-400 font-bold text-sm">/night</span>
-                    </div>
+                    <button onclick="bookNow()" class="w-full bg-slate-900 text-white py-6 rounded-2xl font-bold text-lg hover:bg-blue-600 transition shadow-xl">Confirm Stay</button>
                 </div>
-
-                <div class="bg-slate-50 rounded-2xl p-4 flex flex-col gap-4 mb-8">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-500">Check-in</span>
-                        <span id="checkin-date" class="font-bold">—</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-500">Check-out</span>
-                        <span id="checkout-date" class="font-bold">—</span>
-                    </div>
-                </div>
-
-                <div class="space-y-4 mb-8">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-500">Nights</span>
-                        <span id="night-count" class="font-bold">0</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-500">Experience Add-ons</span>
-                        <span id="upsell-total" class="font-bold">$0</span>
-                    </div>
-                    <div class="pt-4 border-t flex justify-between">
-                        <span class="font-extrabold text-lg">Total</span>
-                        <span id="final-price" class="font-extrabold text-blue-600 text-2xl">$0</span>
-                    </div>
-                </div>
-
-                <button onclick="processBooking()" class="w-full bg-slate-900 text-white py-6 rounded-2xl font-bold text-lg hover:bg-blue-600 transition-all shadow-xl group">
-                    <span id="btn-text">Confirm Booking</span>
-                    <i class="fa-solid fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </button>
             </div>
         </div>
     </main>
 
+    <div id="chat-bubble" class="fixed bottom-6 right-6 z-[100]">
+        <button onclick="toggleChat()" class="w-16 h-16 bg-blue-600 rounded-full text-white text-2xl shadow-2xl hover:scale-110 transition">
+            <i class="fa-solid fa-comment-dots"></i>
+        </button>
+        <div id="chat-window" class="hidden absolute bottom-20 right-0 w-80 bg-white rounded-3xl shadow-2xl overflow-hidden border">
+            <div class="bg-blue-600 p-6 text-white">
+                <p class="font-bold">Alexander</p>
+                <p class="text-xs opacity-75">Typically responds in 5 mins</p>
+            </div>
+            <div class="p-6 h-64 overflow-y-auto text-sm space-y-4" id="chat-content">
+                <div class="bg-slate-100 p-3 rounded-2xl rounded-tl-none">Hello! I'm here if you have any questions about the neighborhood or the suite.</div>
+            </div>
+            <div class="p-4 border-t flex gap-2">
+                <input id="chat-input" type="text" placeholder="Type a message..." class="flex-1 text-sm outline-none">
+                <button onclick="sendMessage()" class="text-blue-600"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // State Management
-        let checkIn = null;
-        let checkOut = null;
-        let upsellTotal = 0;
-        const basePrice = 420;
-
-        // Calendar Logic
-        const calendarGrid = document.getElementById('calendar-grid');
-        const monthDisplay = document.getElementById('current-month-display');
-        let currentMonth = 9; // October (0-indexed 9)
+        // Calendar & Price Logic
+        let selIn = null; let selOut = null; let upsell = 0;
+        const grid = document.getElementById('calendar-grid');
         
-        function renderCalendar() {
-            calendarGrid.innerHTML = '';
-            const daysInMonth = 31;
-            const startDay = 3; // Wednesday
-            
-            // Empty days
-            for(let i=0; i<startDay; i++) calendarGrid.innerHTML += '<div></div>';
-            
-            for(let d=1; d<=daysInMonth; d++) {
-                const isBooked = [4, 5, 18, 19, 25].includes(d);
-                const dayEl = document.createElement('div');
-                dayEl.className = `calendar-day ${isBooked ? 'disabled' : ''}`;
-                dayEl.innerText = d;
-                
-                if(!isBooked) {
-                    dayEl.onclick = () => selectDate(d);
-                }
-                calendarGrid.appendChild(dayEl);
+        function initCalendar() {
+            grid.innerHTML = '';
+            const labels = ['S','M','T','W','T','F','S'];
+            labels.forEach(l => grid.innerHTML += `<div class="font-black text-slate-300 pb-2">${l}</div>`);
+            for(let i=1; i<=31; i++) {
+                const isBooked = [3,4,12,15].includes(i);
+                grid.innerHTML += `<div onclick="${isBooked ? '' : `selectDate(${i})`}" class="calendar-day ${isBooked?'disabled':''}">${i}</div>`;
             }
         }
 
-        function selectDate(day) {
-            if(!checkIn || (checkIn && checkOut)) {
-                checkIn = day;
-                checkOut = null;
-            } else if (day > checkIn) {
-                checkOut = day;
-            } else {
-                checkIn = day;
-            }
-            updateCalendarUI();
-            updatePricing();
+        function selectDate(d) {
+            if(!selIn || (selIn && selOut)) { selIn = d; selOut = null; }
+            else if(d > selIn) { selOut = d; }
+            else { selIn = d; }
+            refreshUI();
         }
 
-        function updateCalendarUI() {
+        function refreshUI() {
             document.querySelectorAll('.calendar-day').forEach(el => {
                 const d = parseInt(el.innerText);
-                el.classList.remove('selected', 'in-range');
-                if(d === checkIn || d === checkOut) el.classList.add('selected');
-                if(d > checkIn && d < checkOut) el.classList.add('in-range');
+                el.classList.remove('selected');
+                if(d === selIn || d === selOut) el.classList.add('selected');
             });
-            
-            document.getElementById('checkin-date').innerText = checkIn ? `Oct ${checkIn}, 2025` : '—';
-            document.getElementById('checkout-date').innerText = checkOut ? `Oct ${checkOut}, 2025` : '—';
+            const nights = selOut ? (selOut - selIn) : 0;
+            document.getElementById('date-range').innerText = selOut ? `Oct ${selIn} - Oct ${selOut}` : 'Select dates';
+            document.getElementById('final-total').innerText = `$${(nights * 420) + upsell}`;
         }
 
-        function toggleUpsell(el, price) {
-            el.classList.toggle('border-blue-600');
-            el.classList.toggle('bg-blue-50');
-            if(el.classList.contains('bg-blue-50')) {
-                upsellTotal += price;
-            } else {
-                upsellTotal -= price;
-            }
-            updatePricing();
+        // Feature Toggles
+        function toggleNight() { document.getElementById('body-tag').classList.toggle('night-mode'); }
+        function toggleAudio() { 
+            const a = document.getElementById('ambient-audio');
+            const btn = document.getElementById('audio-btn');
+            if(a.paused) { a.play(); btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>'; }
+            else { a.pause(); btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>'; }
+        }
+        function toggleUpsell(el, p) {
+            el.classList.toggle('bg-blue-50'); el.classList.toggle('border-blue-600');
+            upsell += el.classList.contains('bg-blue-50') ? p : -p;
+            refreshUI();
+        }
+        function showTip(text) {
+            const tip = document.getElementById('map-tip');
+            document.getElementById('tip-text').innerText = text;
+            tip.classList.remove('hidden');
         }
 
-        function updatePricing() {
-            const nights = checkOut ? (checkOut - checkIn) : 0;
-            const stayTotal = nights * basePrice;
-            const final = stayTotal + upsellTotal;
-            
-            document.getElementById('night-count').innerText = nights;
-            document.getElementById('upsell-total').innerText = `$${upsellTotal}`;
-            document.getElementById('final-price').innerText = final > 0 ? `$${final.toLocaleString()}` : '$0';
+        // Booking & Chat
+        function bookNow() {
+            if(!selOut) return alert("Select your dates first!");
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            document.getElementById('onboarding-modal').style.display = 'flex';
+        }
+        function toggleChat() { document.getElementById('chat-window').classList.toggle('hidden'); }
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            if(!input.value) return;
+            const msg = document.createElement('div');
+            msg.className = "bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none ml-auto max-w-[80%]";
+            msg.innerText = input.value;
+            document.getElementById('chat-content').appendChild(msg);
+            input.value = '';
         }
 
-        // Success Flow
-        function processBooking() {
-            if(!checkOut) {
-                alert("Please select a check-out date first!");
-                return;
-            }
-            const btn = document.getElementById('btn-text');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Securing...';
-            
-            setTimeout(() => {
-                document.getElementById('success-overlay').style.display = 'flex';
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#2563eb', '#93c5fd', '#000000']
-                });
-            }, 1500);
-        }
-
-        renderCalendar();
-
-        // Progress Bar
-        window.onscroll = () => {
-            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            let scrolled = (winScroll / height) * 100;
-            document.getElementById("progress").style.width = scrolled + "%";
-        };
+        initCalendar();
     </script>
 </body>
 </html>
